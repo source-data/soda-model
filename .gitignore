@@ -52,3 +52,11 @@ MANIFEST
 .venv*/
 .conda*/
 .python-version
+data/
+
+wandb/
+*.ipynb
+
+__pycache__
+src/soda_model/__pycache__
+cache/

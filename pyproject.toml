@@ -7,3 +7,21 @@ build-backend = "setuptools.build_meta"
 # For smarter version schemes and other configuration options,
 # check out https://github.com/pypa/setuptools_scm
 version_scheme = "no-guess-dev"
+
+[tool.poetry.extras]
+pipfile_deprecated_finder = ["pipreqs", "requirementslib", "pip-shims"]
+
+[tool.pyright]
+include = ["src"]
+exclude = [
+    "**/node_modules",
+    "**/__pycache__",
+    "src/experimental",
+    "src/typestubs"
+  ]
+stubPath = "src/soda_model"
+venv = ".venv"
+
+reportMissingImports = "warning"
+reportMissingTypeStubs = false
+reportUnboundVariable = "warning"

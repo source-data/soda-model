@@ -1,4 +1,7 @@
-```{todo} THIS IS SUPPOSED TO BE AN EXAMPLE. MODIFY IT ACCORDING TO YOUR NEEDS!
+Please contact us if you have a model generated with SourceData that
+you would like to include in this repository.
+
+<!-- ```{todo} THIS IS SUPPOSED TO BE AN EXAMPLE. MODIFY IT ACCORDING TO YOUR NEEDS!
 
    The document assumes you are using a source repository service that promotes a
    contribution model similar to [GitHub's fork and pull request workflow].
@@ -368,4 +371,4 @@ on [PyPI], the following steps can be used to release a new version for
 ```
 
 [repository]: https://github.com/<USERNAME>/soda-model
-[issue tracker]: https://github.com/<USERNAME>/soda-model/issues
+[issue tracker]: https://github.com/<USERNAME>/soda-model/issues -->

@@ -8,14 +8,30 @@ repos:
   - id: check-added-large-files
   - id: check-ast
   - id: check-json
+  - id: pretty-format-json
+    args: ['--autofix', '--no-ensure-ascii']
   - id: check-merge-conflict
   - id: check-xml
   - id: check-yaml
   - id: debug-statements
   - id: end-of-file-fixer
   - id: requirements-txt-fixer
+  - id: detect-private-key
+  # - id: detect-aws-credentials
+  - id: name-tests-test
+    args: ['--pytest-test-first']
+  - id: check-docstring-first
   - id: mixed-line-ending
     args: ['--fix=auto']  # replace 'auto' with 'lf' to enforce Linux/Mac line endings or 'crlf' for Windows
+
+# -   repo: https://github.com/asottile/reorder_python_imports
+#     rev: v3.9.0
+#     hooks:
+#     -   id: reorder-python-imports
+# - repo: https://github.com/pre-commit/mirrors-autopep8
+#   rev:  v2.0.2
+#   hooks:
+#   - id: autopep8
 
 ## If you want to automatically "modernize" your Python code:
 # - repo: https://github.com/asottile/pyupgrade
@@ -24,27 +40,27 @@ repos:
 #   - id: pyupgrade
 #     args: ['--py37-plus']
 
-## If you want to avoid flake8 errors due to unused vars or imports:
-# - repo: https://github.com/PyCQA/autoflake
-#   rev: v2.0.0
+# If you want to avoid flake8 errors due to unused vars or imports:
+- repo: https://github.com/PyCQA/autoflake
+  rev: v2.0.0
+  hooks:
+  - id: autoflake
+    args: [
+      --in-place,
+      --remove-all-unused-imports,
+      --remove-unused-variables,
+    ]
+
+# - repo: https://github.com/PyCQA/isort
+#   rev: 5.12.0
 #   hooks:
-#   - id: autoflake
-#     args: [
-#       --in-place,
-#       --remove-all-unused-imports,
-#       --remove-unused-variables,
-#     ]
+#   - id: isort
 
-- repo: https://github.com/PyCQA/isort
-  rev: 5.11.4
-  hooks:
-  - id: isort
-
-- repo: https://github.com/psf/black
-  rev: stable
-  hooks:
-  - id: black
-    language_version: python3
+# - repo: https://github.com/psf/black
+#   rev: 23.1.0
+#   hooks:
+#   - id: black
+#     language_version: python3
 
 ## If like to embrace black styles even in the docs:
 # - repo: https://github.com/asottile/blacken-docs
@@ -54,7 +70,7 @@ repos:
 #     additional_dependencies: [black]
 
 - repo: https://github.com/PyCQA/flake8
-  rev: 5.0.4
+  rev: 6.0.0
   hooks:
   - id: flake8
   ## You can add flake8 plugins via `additional_dependencies`:

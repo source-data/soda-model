@@ -1,0 +1,32 @@
+version: '2.3'
+
+services:
+  nlp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # args: # abandoning this for now, transfomers needs to be able to mkdir /.cache
+      #   - user_id=${USER_ID}
+      #   - group_id=${GROUP_ID}
+    image: soda_model
+    # depends_on:
+    # runtime: nvidia
+    deploy: &gpus
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+    volumes: &volumes
+    - .:/app
+    - ./data:/data
+    - ./data/results:${RESULTS_FOLDER}
+    - ./data/models:${MODELS_FOLDER}
+    - ./data/test:${TEST_FOLDER}
+    - ./cache:${CACHE}
+    # - ./dummy:${DUMMY_DIR}
+    env_file:
+    - ./.env
+    ports:
+      - 8900:8888  # this allows to run jupyter notebook --port=8888 --ip=0.0.0.0 --allow-root
+    working_dir: /app
+    command: ["jupyter", "notebook", "--port=8888", "--ip=0.0.0.0", "--allow-root"]

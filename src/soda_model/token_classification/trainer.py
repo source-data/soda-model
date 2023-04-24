@@ -158,7 +158,7 @@ class TrainTokenClassification:
         if self.training_args.do_predict:
             logger.info(f"Testing on {len(self.test_dataset)}.")
             # self.trainer.args.prediction_loss_only = False
-            trainer.data_collator = self.test_data_collator
+            self.trainer.data_collator = self.test_data_collator
             if self.use_crf:
                 print("****************************DATA COLLATOR*******************")
                 print(trainer.data_collator)

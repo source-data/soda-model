@@ -122,3 +122,26 @@ done
 #             --results_file "ner_CRF_${ner_labels[$j]}_${model_name_list[$i]}_large_maskingprob_0.0_"
 #    done
 # done
+
+
+python -m soda_model.token_classification.trainer \
+    --dataset_id "EMBO/SourceData" \
+    --task NER \
+    --version 1.0.0 \
+    --from_pretrained "michiyasunaga/BioLinkBERT-base" \
+    --masking_probability 1.0 \
+    --replacement_probability 0.0 \
+    --per_device_train_batch_size 8 \
+    --per_device_eval_batch_size 16 \
+    --add_prefix_space \
+    --num_train_epochs 0.5 \
+    --learning_rate 0.0001 \
+    --disable_tqdm False \
+    --report_to none \
+    --classifier_dropout 0.2 \
+    --do_train \
+    --do_predict \
+    --truncation \
+    --padding "longest" \
+    --ner_labels GENEPROD \
+    --results_file "ner_GENEPROD_BioLinkBERT_base_maskingprob_1.0_"

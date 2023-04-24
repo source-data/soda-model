@@ -158,14 +158,15 @@ class TrainTokenClassification:
         if self.training_args.do_predict:
             logger.info(f"Testing on {len(self.test_dataset)}.")
             # self.trainer.args.prediction_loss_only = False
-            self.trainer.data_collator = self.test_data_collator
+            if "ROLES" not in self.task:
+                self.trainer.data_collator = self.test_data_collator
             if self.use_crf:
                 print("****************************DATA COLLATOR*******************")
-                print(trainer.data_collator)
+                print(self.trainer.data_collator)
                 (_, all_predictions), all_labels, _ = self.trainer.predict(self.test_dataset.remove_columns(['only_in_test', 'token_type_ids', 'attention_mask']), metric_key_prefix='test')
             else:
                 print("****************************DATA COLLATOR*******************")
-                print(trainer.data_collator)
+                print(self.trainer.data_collator)
                 all_predictions, all_labels, _ = self.trainer.predict(self.test_dataset.remove_columns(['only_in_test', 'token_type_ids', 'attention_mask']), metric_key_prefix='test')
                 all_predictions = np.argmax(all_predictions, axis=-1)
 

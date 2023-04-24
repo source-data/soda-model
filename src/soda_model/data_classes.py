@@ -43,6 +43,10 @@ class TrainingArgumentsTOKCL(TrainingArguments):
         default=0.0,
         metadata={"help": "The probability of replacing a masked token with a random token."},
         )
+    random_masking: bool = field(
+        default=False,
+        metadata={"help": "If true, does random masking."},
+        )
     max_steps: int = field(
         default=-1,
         metadata={"help": "If > 0: set total number of training steps to perform. Override num_train_epochs."},

@@ -14,9 +14,15 @@ from soda_model.metrics import MetricsTOKCL, MetricsCRFTOKCL
 from soda_model.callback import ShowExampleTOKCL
 from soda_model.data_classes import TrainingArgumentsTOKCL
 
-from soda_model.data_collator import DataCollatorForMaskedTokenClassification
+from soda_model.data_collator import (
+    DataCollatorForMaskedTokenClassification,
+    MaskedDataCollatorForTokenClassification,
+    )
 import numpy as np
-from soda_model.token_classification.modelling import CRFforTokenClassification
+from soda_model.token_classification.modelling import (
+    CRFforTokenClassification,
+    BertForMultiRolesClassification
+    )
 from seqeval.metrics import (
     classification_report
 )
@@ -50,6 +56,7 @@ class TrainTokenClassification:
         max_length: int = 512,
         padding: str = "true",
         truncation: bool = True,
+        use_is_category: bool = False,
     ):
         self.training_args = training_args
         self.from_pretrained = from_pretrained
@@ -63,6 +70,7 @@ class TrainTokenClassification:
         self.max_length = max_length
         self.padding = padding
         self.truncation = truncation
+        self.use_is_category = False if "ROLES" not in self.task else use_is_category
         if padding == "true":
             self.padding = True
         elif padding == "false":
@@ -91,18 +99,30 @@ class TrainTokenClassification:
         dataset = data_loader.load_data()
 
         self.train_dataset, self.eval_dataset, self.test_dataset = data_loader.tokenize_data(dataset, self.tokenizer)
+        if self.use_is_category and "is_category" not in self.train_dataset.features:
+            self.train_dataset = self.train_dataset.add_column("is_category", self.train_dataset["tag_mask"])
+            self.eval_dataset = self.eval_dataset.add_column("is_category", self.eval_dataset["tag_mask"])
+            self.test_dataset = self.test_dataset.add_column("is_category", self.test_dataset["tag_mask"])
+
         self.label2id = data_loader.label2id
         self.id2label = data_loader.id2label
 
         logger.info("Loading and preparing the data collator")
-        self.data_collator = self._get_data_collator()
+        self.data_collator, self.test_data_collator = self._get_data_collator()
 
         logger.info("Defining the metrics computation class")
         self.compute_metrics = MetricsCRFTOKCL if self.use_crf else MetricsTOKCL
         self.compute_metrics = self.compute_metrics(label_list=list(self.label2id.keys()))
 
         logger.info("Defining the model")
-        self.model = CRFforTokenClassification if self.use_crf else AutoModelForTokenClassification
+        if self.use_crf:
+            self.model = CRFforTokenClassification
+        else:
+            if self.use_is_category:
+                self.model = BertForMultiRolesClassification
+            else:
+                self.model = AutoModelForTokenClassification
+
         self.model = self.model.from_pretrained(
             self.from_pretrained,
             num_labels=len(list(self.label2id.keys())),
@@ -138,9 +158,14 @@ class TrainTokenClassification:
         if self.training_args.do_predict:
             logger.info(f"Testing on {len(self.test_dataset)}.")
             # self.trainer.args.prediction_loss_only = False
+            trainer.data_collator = self.test_data_collator
             if self.use_crf:
+                print("****************************DATA COLLATOR*******************")
+                print(trainer.data_collator)
                 (_, all_predictions), all_labels, _ = self.trainer.predict(self.test_dataset.remove_columns(['only_in_test', 'token_type_ids', 'attention_mask']), metric_key_prefix='test')
             else:
+                print("****************************DATA COLLATOR*******************")
+                print(trainer.data_collator)
                 all_predictions, all_labels, _ = self.trainer.predict(self.test_dataset.remove_columns(['only_in_test', 'token_type_ids', 'attention_mask']), metric_key_prefix='test')
                 all_predictions = np.argmax(all_predictions, axis=-1)
 
@@ -185,18 +210,47 @@ class TrainTokenClassification:
         Returns:
             DataCollator
         """
-        self.training_args.remove_unused_columns = False
-        data_collator = DataCollatorForMaskedTokenClassification(
-            tokenizer=self.tokenizer,
-            return_tensors='pt',
-            padding=self.padding,
-            max_length=self.max_length,
-            masking_probability=self.training_args.masking_probability,
-            replacement_probability=self.training_args.replacement_probability,
-            pad_to_multiple_of=None,
-            select_labels=self.training_args.select_labels,
-            )
-        return data_collator
+        if self.training_args.random_masking:
+            data_collator = MaskedDataCollatorForTokenClassification(
+                tokenizer=self.tokenizer,
+                return_tensors='pt',
+                padding=self.padding,
+                max_length=self.max_length,
+                masking_probability=self.training_args.masking_probability,
+                pad_to_multiple_of=None,
+                )
+            test_data_collator = MaskedDataCollatorForTokenClassification(
+                tokenizer=self.tokenizer,
+                return_tensors='pt',
+                padding=self.padding,
+                max_length=self.max_length,
+                masking_probability=0.0,
+                pad_to_multiple_of=None,
+                )
+            return data_collator, test_data_collator
+        else:
+            self.training_args.remove_unused_columns = False
+            data_collator = DataCollatorForMaskedTokenClassification(
+                tokenizer=self.tokenizer,
+                return_tensors='pt',
+                padding=self.padding,
+                max_length=self.max_length,
+                masking_probability=self.training_args.masking_probability,
+                replacement_probability=self.training_args.replacement_probability,
+                pad_to_multiple_of=None,
+                select_labels=self.training_args.select_labels,
+                )
+            test_data_collator = DataCollatorForMaskedTokenClassification(
+                tokenizer=self.tokenizer,
+                return_tensors='pt',
+                padding=self.padding,
+                max_length=self.max_length,
+                masking_probability=0.0,
+                replacement_probability=0.0,
+                pad_to_multiple_of=None,
+                select_labels=self.training_args.select_labels,
+                )
+            return data_collator, test_data_collator
 
     def _get_tokenizer(self):
         if "Megatron" in self.from_pretrained:
@@ -309,6 +363,11 @@ if __name__ == "__main__":
         action="store_true",
         help="If filtering examples that do not contain the selected labels."
         )
+    parser.add_argument(
+        "--use_is_category",
+        action="store_true",
+        help="If adding the position of the category to the roles"
+        )
 
     training_args, args = parser.parse_args_into_dataclasses()
     dataset_id = args.dataset_id
@@ -331,7 +390,8 @@ if __name__ == "__main__":
         ner_labels=ner_labels,
         add_prefix_space=add_prefix_space,
         use_crf=use_crf,
-        max_length=max_length
+        max_length=max_length,
+        use_is_category=args.use_is_category
     )
 
     trainer()

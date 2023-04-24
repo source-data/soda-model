@@ -41,6 +41,7 @@ class DataLoader:
             version=self.version,
             verification_mode=self.verification_mode,
             )
+        self.is_category = "is_category" in data["train"][0].keys()
         logger.info("Generating the label2id mapping")
         self.id2label, self.label2id = self._get_data_labels(data["train"])
         self.dataset_id2label = self.id2label
@@ -84,14 +85,25 @@ class DataLoader:
             )
         all_labels = examples['labels']
         all_flags = examples['only_in_test']
+
         new_labels = []
         tag_mask = []
         new_only_in_test_flag = []
+
         for i, (labels, flags) in enumerate(zip(all_labels, all_flags)):
             word_ids = tokenized_inputs.word_ids(i)
             new_labels.append(self._align_labels_with_tokens(labels, word_ids))
             new_only_in_test_flag.append(self._align_only_test_flag_with_tokens(flags, word_ids))
             tag_mask.append([0 if tag in [0, -100] else 1 for tag in new_labels[-1]])
+
+        if self.is_category:
+            all_cats = examples['is_category']
+            is_category = []
+            for i, cats in enumerate(all_cats):
+                word_ids = tokenized_inputs.word_ids(i)
+                is_category.append(self._align_labels_with_tokens(cats, word_ids, do_shift=False))
+            tokenized_inputs['is_category'] = is_category
+
         tokenized_inputs['labels'] = new_labels
         tokenized_inputs['tag_mask'] = tag_mask
         tokenized_inputs['only_in_test'] = new_only_in_test_flag
@@ -193,7 +205,7 @@ class DataLoader:
             label += 1
         return label
 
-    def _align_labels_with_tokens(self, labels, word_ids):
+    def _align_labels_with_tokens(self, labels, word_ids, do_shift=True):
         """
         Expands the NER tags once the sub-word tokenization is added.
         Arguments
@@ -213,7 +225,10 @@ class DataLoader:
                 # We append the same label
                 new_labels.append(labels[word_id])
             else:
-                new_labels.append(self._shift_label(labels[word_id]))
+                if do_shift:
+                    new_labels.append(self._shift_label(labels[word_id]))
+                else:
+                    new_labels.append(labels[word_id])
 
         return new_labels
 
@@ -308,6 +323,7 @@ class DataLoaderSelectAndFilter(DataLoader):
             batched=True)
 
         if self.filter_empty:
-            tokenized_data = tokenized_data.filter(lambda example: (1 in example["labels"]) or (2 in example["labels"]))
-
-        return tokenized_data["train"], tokenized_data['validation'], tokenized_data['test']
+            tokenized_data_train = tokenized_data["train"].filter(lambda example: (1 in example["labels"]) or (2 in example["labels"]))
+        else:
+            tokenized_data_train = tokenized_data["train"]
+        return tokenized_data_train, tokenized_data['validation'], tokenized_data['test']

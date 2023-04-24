@@ -60,3 +60,4 @@ wandb/
 __pycache__
 src/soda_model/__pycache__
 cache/
+list_of_doom

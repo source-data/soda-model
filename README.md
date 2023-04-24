@@ -92,6 +92,44 @@ Example of how to train a NER model using this repository form inside the
         --filter_empty \
         --max_length 512 \
         --max_steps 50 \
+        --masking_probability 1.0 \
+        --replacement_probability 1.0 \
+        --classifier_dropout 0.2 \
+        --do_train \
+        --do_predict \
+        --use_crf \
+        --report_to none \
+        --truncation \
+        --padding "longest" \
+        --per_device_train_batch_size 2 \
+        --per_device_eval_batch_size 4 \
+        --evaluation_strategy "no" \
+        --save_strategy "no" \
+        --results_file "test_crf_"
+```
+
+## Examples of experiments that can be run using SODA-model
+
+### Tokenclassification: NER
+
+### Tokenclassification: PANELIZATION
+
+### Tokenclassification: Semantic interpretation of Empirical Roles (SiER)
+
+```bash
+    # Empirical role of geneproducts.
+    # It will show which tokens belong to GENEPROD
+    # No masking is needed.
+    # Can be used for SMALL_MOLECULE changing ROLES_GP to ROLES_SM
+    python -m soda_model.token_classification.trainer \
+        --dataset_id "EMBO/SourceData" \
+        --task ROLES_GP \
+        --version 1.0.0 \
+        --from_pretrained microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract \
+        --ner_labels all \
+        --filter_empty \
+        --max_length 512 \
+        --num_train_epochs 2.0 \
         --masking_probability 0.0 \
         --replacement_probability 0.0 \
         --classifier_dropout 0.2 \
@@ -100,11 +138,66 @@ Example of how to train a NER model using this repository form inside the
         --report_to none \
         --truncation \
         --padding "longest" \
-        --per_device_train_batch_size 2 \
-        --per_device_eval_batch_size 4 \
-        --results_file "testing_metrics_for_gen_vs_memo_"
-```
+        --per_device_train_batch_size 16 \
+        --per_device_eval_batch_size 32 \
+        --evaluation_strategy "no" \
+        --save_strategy "no" \
+        --results_file "roles_gp_no_masking_" \
+        --use_is_category
 
+    # Empirical role of geneproducts.
+    # It masks the GENEPROD entities
+    # Can be used for SMALL_MOLECULE changing ROLES_GP to ROLES_SM
+    python -m soda_model.token_classification.trainer \
+        --dataset_id "EMBO/SourceData" \
+        --task ROLES_GP \
+        --version 1.0.0 \
+        --from_pretrained microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract \
+        --ner_labels all \
+        --filter_empty \
+        --max_length 512 \
+        --num_train_epochs 2.0 \
+        --masking_probability 1.0 \
+        --replacement_probability 1.0 \
+        --classifier_dropout 0.2 \
+        --do_train \
+        --do_predict \
+        --report_to none \
+        --truncation \
+        --padding "longest" \
+        --per_device_train_batch_size 16 \
+        --per_device_eval_batch_size 32 \
+        --evaluation_strategy "no" \
+        --save_strategy "no" \
+        --results_file "roles_gp_masking_"
+
+    # Assigns Empirical roles to GP and SM simultaneously
+    # It does not mask the entities, but adds an indicator
+    # of where the tokens they belong to
+    python -m soda_model.token_classification.trainer \
+        --dataset_id "EMBO/SourceData" \
+        --task ROLES_MULTI \
+        --version 1.0.0 \
+        --from_pretrained microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract \
+        --ner_labels all \
+        --filter_empty \
+        --max_length 512 \
+        --num_train_epochs 2.0 \
+        --masking_probability 0.0 \
+        --replacement_probability 0.0 \
+        --classifier_dropout 0.2 \
+        --do_train \
+        --do_predict \
+        --report_to none \
+        --truncation \
+        --padding "longest" \
+        --per_device_train_batch_size 16 \
+        --per_device_eval_batch_size 32 \
+        --evaluation_strategy "no" \
+        --save_strategy "no" \
+        --results_file "roles_multi_"
+
+```
 ## Note
 
 This project has been set up using PyScaffold 4.4. For details and usage

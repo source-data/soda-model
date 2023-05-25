@@ -46,6 +46,27 @@ class ShowExample(TrainerCallback):
         inputs = {k: v[0] for k, v in inputs.items()}
         self.to_console(inputs, pred_idx)
 
+    def on_predict(
+        self,
+        *args,
+        model=None,
+        eval_dataloader: torch.utils.data.DataLoader = None,
+        **kwargs
+    ):
+        """Method called when evaluating the model. Only the needed kwargs are unpacked.
+
+        Args:
+
+            model: the current model being trained.
+            eval_dataloader (torch.utils.data.DataLoader): the DataLoader used to produce the evaluation examples
+        """
+        with torch.no_grad():
+            inputs = self.pick_random_example(eval_dataloader)
+            pred = model(inputs["input_ids"], labels=inputs["labels"], attention_mask=inputs["attention_mask"])  # type: ignore
+            pred_idx = pred['logits'].argmax(-1)[0].cpu()
+        inputs = {k: v[0] for k, v in inputs.items()}
+        self.to_console(inputs, pred_idx)
+
     def pick_random_example(self, dataloader: torch.utils.data.DataLoader) -> Dict[str, torch.Tensor]:
         L = len(dataloader.dataset)
         dataset = dataloader.dataset

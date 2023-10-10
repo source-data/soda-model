@@ -57,8 +57,10 @@ class TrainTokenClassification:
         padding: str = "true",
         truncation: bool = True,
         use_is_category: bool = False,
+        entity_identifier: str = "#$%&",
     ):
         self.training_args = training_args
+        self.entity_identifier = entity_identifier
         self.from_pretrained = from_pretrained
         self.dataset_id = dataset_id
         self.task = task
@@ -94,6 +96,7 @@ class TrainTokenClassification:
             filter_empty=self.filter_empty,
             padding=self.padding,
             truncation=self.truncation,
+            entity_identifier=self.entity_identifier,
             )
 
         dataset = data_loader.load_data()
@@ -134,13 +137,15 @@ class TrainTokenClassification:
             return_dict=False if self.use_crf else True,
             )
 
+        rem_cols = self._get_remove_columns()
+
         logger.info("Defining the trainer class")
         self.trainer = Trainer(
             model=self.model,
             args=self.training_args,
             data_collator=self.data_collator,
-            train_dataset=self.train_dataset.remove_columns(['only_in_test', 'token_type_ids', 'attention_mask']),
-            eval_dataset=self.eval_dataset.remove_columns(['only_in_test', 'token_type_ids', 'attention_mask']),
+            train_dataset=self.train_dataset.remove_columns(rem_cols),
+            eval_dataset=self.eval_dataset.remove_columns(rem_cols),
             compute_metrics=self.compute_metrics,
             callbacks=[
                 DefaultFlowCallback,
@@ -163,11 +168,11 @@ class TrainTokenClassification:
             if self.use_crf:
                 print("****************************DATA COLLATOR*******************")
                 print(self.trainer.data_collator)
-                (_, all_predictions), all_labels, _ = self.trainer.predict(self.test_dataset.remove_columns(['only_in_test', 'token_type_ids', 'attention_mask']), metric_key_prefix='test')
+                (_, all_predictions), all_labels, _ = self.trainer.predict(self.test_dataset.remove_columns(rem_cols), metric_key_prefix='test')
             else:
                 print("****************************DATA COLLATOR*******************")
                 print(self.trainer.data_collator)
-                all_predictions, all_labels, _ = self.trainer.predict(self.test_dataset.remove_columns(['only_in_test', 'token_type_ids', 'attention_mask']), metric_key_prefix='test')
+                all_predictions, all_labels, _ = self.trainer.predict(self.test_dataset.remove_columns(rem_cols), metric_key_prefix='test')
                 all_predictions = np.argmax(all_predictions, axis=-1)
 
             only_in_test_pad = []
@@ -202,6 +207,21 @@ class TrainTokenClassification:
                 pickle.dump(generalization_metrics, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
             # Save the results to a python file that I can load later to get the values and plot
+
+    def _get_remove_columns(self):
+        cols_to_remove = []
+        if 'only_in_test' in self.train_dataset.column_names:
+            cols_to_remove.append('only_in_test')
+        if 'token_type_ids' in self.train_dataset.column_names:
+            cols_to_remove.append('token_type_ids')
+        if 'attention_mask' in self.train_dataset.column_names:
+            cols_to_remove.append('attention_mask')
+        if 'text' in self.train_dataset.column_names:
+            cols_to_remove.append('text')
+        if 'is_category' in self.train_dataset.column_names:
+            cols_to_remove.append('is_category')
+
+        return cols_to_remove
 
     def _get_data_collator(self):
         """
@@ -369,6 +389,11 @@ if __name__ == "__main__":
         action="store_true",
         help="If adding the position of the category to the roles"
         )
+    parser.add_argument(
+        "--entity_identifier",
+        default="",
+        help="If adding the position of the category to the roles"
+        )
 
     training_args, args = parser.parse_args_into_dataclasses()
     dataset_id = args.dataset_id
@@ -380,6 +405,10 @@ if __name__ == "__main__":
     filter_empty = args.filter_empty
     max_length = args.max_length
     ner_labels = ["all"] if args.ner_labels == "all" else args.ner_labels
+    if args.entity_identifier:
+        use_is_category = False
+    else:
+        use_is_category = args.use_is_category
 
     trainer = TrainTokenClassification(
         training_args=training_args,
@@ -392,7 +421,8 @@ if __name__ == "__main__":
         add_prefix_space=add_prefix_space,
         use_crf=use_crf,
         max_length=max_length,
-        use_is_category=args.use_is_category
+        use_is_category=use_is_category,
+        entity_identifier=args.entity_identifier
     )
 
     trainer()

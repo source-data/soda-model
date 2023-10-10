@@ -197,6 +197,32 @@ Example of how to train a NER model using this repository form inside the
         --save_strategy "no" \
         --results_file "roles_multi_"
 
+    # Like above but it identifies the entities in the text
+python -m soda_model.token_classification.trainer \
+    --dataset_id "EMBO/SourceData" \
+    --task ROLES_MULTI \
+    --version 1.0.0 \
+    --from_pretrained microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract \
+    --ner_labels all \
+    --filter_empty \
+    --max_length 512 \
+    --num_train_epochs 2.0 \
+    --masking_probability 0.0 \
+    --replacement_probability 0.0 \
+    --classifier_dropout 0.2 \
+    --do_train \
+    --do_predict \
+    --report_to none \
+    --truncation \
+    --padding "longest" \
+    --per_device_train_batch_size 16 \
+    --per_device_eval_batch_size 32 \
+    --evaluation_strategy "no" \
+    --save_strategy "no" \
+    --results_file "roles_multi_" \
+    --entity_identifier "(*&"
+
+
 ```
 ## Note
 

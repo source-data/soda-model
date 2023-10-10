@@ -21,6 +21,7 @@ class DataLoader:
             max_length: int = 512,
             padding: Union[bool, str, None] = False,
             truncation: bool = True,
+            entity_identifier: str = "#$%&",
             **kwargs
     ):
         self.dataset_id = dataset_id
@@ -32,6 +33,7 @@ class DataLoader:
         self.max_length = max_length
         self.padding = padding
         self.truncation = truncation
+        self.entity_identifier = entity_identifier
 
     def load_data(self) -> DatasetDict:
         logger.info(f"Obtaining data from the HuggingFace 🤗 Hub: load_dataset('{self.dataset_id}',' {self.task}', version='{self.version})")
@@ -60,11 +62,69 @@ class DataLoader:
     def tokenize_data(self, data: DatasetDict, tokenizer) -> DatasetDict:
         logger.info("Tokenizing data")
         self.tokenizer = tokenizer
+        if self.entity_identifier and self.task == "ROLES_MULTI":
+            data = data.map(
+                self._identify_entities_for_multi_roles,
+                batched=True,
+            )
+
+        if self.entity_identifier and self.task == "ROLES_MULTI":
+            rem_cols = ["words", "is_category"]
+        elif self.task == "PANELIZATION":
+            rem_cols = ["words", "text"]
+        else:
+            rem_cols = ["words"]
+
         tokenized_data = data.map(
             self._tokenize_and_align_labels,
             batched=True,
-            remove_columns=["words", "text"] if self.task != "PANELIZATION" else ["words"])
+            remove_columns=rem_cols
+        )
         return tokenized_data["train"], tokenized_data['validation'], tokenized_data['test']
+
+    def _identify_entities_for_multi_roles(self, examples) -> DatasetDict:
+        """
+        Identifies entities in the data for the multi-roles task.
+        This is useful to provide a non-masked pipelined version of our roles task
+        Args:
+            examples: batch of data from a `datasets.DatasetDict`
+
+        Returns:
+            `datasets.DatasetDict`
+        """
+
+        all_labels = examples['labels']
+        all_words = examples['words']
+        all_is_category = examples['is_category']
+
+        cat2class = {1: "GENEPROD", 2: "MOLECULE"}
+
+        new_words = []
+        new_labels = []
+
+        for i, (labels, words, categories) in enumerate(zip(all_labels, all_words, all_is_category)):
+            sentence_words = []
+            sentence_labels = []
+
+            for label, word, category in zip(labels, words, categories):
+                if category == 2:
+                    sentence_labels.append(label)
+                    if self.id2label.get(label, "O").startswith("B-"):
+                        sentence_words.append(
+                            self.entity_identifier + "-" + cat2class[category] + "-" + self.entity_identifier + word
+                        )
+                    else:
+                        sentence_words.append(word)
+                else:
+                    sentence_labels.append(0)
+                    sentence_words.append(word)
+            new_words.append(sentence_words)
+            new_labels.append(sentence_labels)
+
+        examples["words"] = new_words
+        examples["labels"] = new_labels
+
+        return examples
 
     def _tokenize_and_align_labels(self, examples) -> DatasetDict:
         """
@@ -269,12 +329,19 @@ class DataLoaderSelectAndFilter(DataLoader):
             max_length: int = 512,
             padding: Union[bool, str, None] = False,
             truncation: bool = True,
+            entity_idenfifier: str = "#$%&"
             ):
-        super().__init__(dataset_id, task, version, ner_labels=ner_labels,
-                         verification_mode=verification_mode,
-                         max_length=max_length,
-                         padding=padding,
-                         truncation=truncation)
+        super().__init__(
+            dataset_id,
+            task,
+            version,
+            ner_labels=ner_labels,
+            verification_mode=verification_mode,
+            max_length=max_length,
+            padding=padding,
+            truncation=truncation,
+            entity_idenfifier=entity_idenfifier
+        )
         self.filter_empty = filter_empty
 
     def _generate_new_label_dict(self):

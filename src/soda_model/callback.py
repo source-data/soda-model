@@ -42,9 +42,11 @@ class ShowExample(TrainerCallback):
         with torch.no_grad():
             inputs = self.pick_random_example(eval_dataloader)
             pred = model(inputs["input_ids"], labels=inputs["labels"], attention_mask=inputs["attention_mask"])  # type: ignore
-            pred_idx = pred['logits'].argmax(-1)[0].cpu()
-        inputs = {k: v[0] for k, v in inputs.items()}
-        self.to_console(inputs, pred_idx)
+            if isinstance(pred, dict):
+                pred_idx = pred['logits'].argmax(-1)[0].cpu()
+                self.to_console(inputs, pred_idx)
+            else:
+                pass
 
     def on_predict(
         self,
@@ -63,7 +65,11 @@ class ShowExample(TrainerCallback):
         with torch.no_grad():
             inputs = self.pick_random_example(eval_dataloader)
             pred = model(inputs["input_ids"], labels=inputs["labels"], attention_mask=inputs["attention_mask"])  # type: ignore
-            pred_idx = pred['logits'].argmax(-1)[0].cpu()
+            if isinstance(pred, dict):
+                pred_idx = pred['logits'].argmax(-1)[0].cpu()
+                self.to_console(inputs, pred_idx)
+            else:
+                pass
         inputs = {k: v[0] for k, v in inputs.items()}
         self.to_console(inputs, pred_idx)
 
@@ -79,8 +85,8 @@ class ShowExample(TrainerCallback):
 
     def to_console(self, inputs: Dict[str, torch.Tensor], pred_idx):
         pred_idx = [e.item() for e in pred_idx]
-        input_ids = [e.item() for e in inputs["input_ids"]]
-        labels = [e.item() for e in inputs["labels"]]
+        input_ids = [e.item() for e in inputs["input_ids"][0]]
+        labels = [e.item() for e in inputs["labels"][0]]
         colored = ""
         for i in range(len(input_ids)):
             input_id = input_ids[i]

@@ -7,39 +7,39 @@ model_name_list=("BioLinkBERT")
 # masking_probability=(0.00 1.00)
 masking_probability=(0.00)
 
-# for i in ${!small_model_list[@]}; do
-#     for j in ${!masking_probability[@]}; do
-#         python -m soda_model.token_classification.trainer \
-#             --dataset_id "EMBO/SourceData" \
-#             --task ROLES_GP \
-#             --version 1.0.0 \
-#             --from_pretrained ${small_model_list[$i]} \
-#             --masking_probability ${masking_probability[$j]} \
-#             --replacement_probability 0.0 \
-#             --per_device_train_batch_size 32 \
-#             --per_device_eval_batch_size 64 \
-#             --add_prefix_space \
-#             --num_train_epochs 1.0 \
-#             --learning_rate 0.0001 \
-#             --disable_tqdm False \
-#             --report_to none \
-#             --classifier_dropout 0.2 \
-#             --do_train \
-#             --do_eval \
-#             --do_predict \
-#             --truncation \
-#             --padding "longest" \
-#             --ner_labels all \
-#             --results_file "geneprod_roles_${model_name_list[$i]}_base_maskingprob_${masking_probability[$j]}_"
-#     done
-# done
+for i in ${!small_model_list[@]}; do
+    for j in ${!masking_probability[@]}; do
+        python -m soda_model.token_classification.trainer \
+            --dataset_id "EMBO/SourceData" \
+            --task ROLES_GP \
+            --version 2.0.3 \
+            --from_pretrained ${small_model_list[$i]} \
+            --masking_probability ${masking_probability[$j]} \
+            --replacement_probability 0.0 \
+            --per_device_train_batch_size 32 \
+            --per_device_eval_batch_size 64 \
+            --add_prefix_space \
+            --num_train_epochs 1.0 \
+            --learning_rate 0.0001 \
+            --disable_tqdm False \
+            --report_to none \
+            --classifier_dropout 0.2 \
+            --do_train \
+            --do_eval \
+            --do_predict \
+            --truncation \
+            --padding "longest" \
+            --ner_labels all \
+            --results_file "v2.0.3\geneprod_roles_${model_name_list[$i]}_base_maskingprob_${masking_probability[$j]}_"
+    done
+done
 
 for i in ${!large_model_list[@]}; do
     for j in ${!masking_probability[@]}; do
         python -m soda_model.token_classification.trainer \
             --dataset_id "EMBO/SourceData" \
             --task ROLES_GP \
-            --version 1.0.0 \
+            --version 2.0.3 \
             --from_pretrained ${large_model_list[$i]} \
             --masking_probability ${masking_probability[$j]} \
             --replacement_probability 0.0 \
@@ -57,6 +57,6 @@ for i in ${!large_model_list[@]}; do
             --truncation \
             --padding "longest" \
             --ner_labels all \
-            --results_file "geneprod_roles_${model_name_list[$i]}_large_maskingprob_${masking_probability[$j]}_"
+            --results_file "v2.0.3\geneprod_roles_${model_name_list[$i]}_large_maskingprob_${masking_probability[$j]}_"
     done
 done

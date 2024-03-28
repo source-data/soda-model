@@ -10,7 +10,7 @@ for i in ${!small_model_list[@]}; do
         python -m soda_model.token_classification.trainer \
             --dataset_id "EMBO/SourceData" \
             --task ROLES_SM \
-            --version 1.0.0 \
+            --version 2.0.3 \
             --from_pretrained ${small_model_list[$i]} \
             --masking_probability ${masking_probability[$j]} \
             --replacement_probability 0.0 \
@@ -28,7 +28,7 @@ for i in ${!small_model_list[@]}; do
             --truncation \
             --padding "longest" \
             --ner_labels all \
-            --results_file "smallmol_roles_${model_name_list[$i]}_base_maskingprob_${masking_probability[$j]}_"
+            --results_file "v2.0.3\smallmol_roles_${model_name_list[$i]}_base_maskingprob_${masking_probability[$j]}_"
     done
 done
 
@@ -37,7 +37,7 @@ for i in ${!large_model_list[@]}; do
         python -m soda_model.token_classification.trainer \
             --dataset_id "EMBO/SourceData" \
             --task ROLES_SM \
-            --version 1.0.0 \
+            --version 2.0.3 \
             --from_pretrained ${large_model_list[$i]} \
             --masking_probability ${masking_probability[$j]} \
             --replacement_probability 0.0 \
@@ -55,6 +55,6 @@ for i in ${!large_model_list[@]}; do
             --truncation \
             --padding "longest" \
             --ner_labels all \
-            --results_file "smallmol_roles_${model_name_list[$i]}_large_maskingprob_${masking_probability[$j]}_"
+            --results_file "v2.0.3\smallmol_roles_${model_name_list[$i]}_large_maskingprob_${masking_probability[$j]}_"
     done
 done

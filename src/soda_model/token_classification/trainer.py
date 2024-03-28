@@ -58,6 +58,7 @@ class TrainTokenClassification:
         truncation: bool = True,
         use_is_category: bool = False,
         entity_identifier: str = "#$%&",
+        train_set_perc: float = 1.0,
     ):
         self.training_args = training_args
         self.entity_identifier = entity_identifier
@@ -73,6 +74,7 @@ class TrainTokenClassification:
         self.padding = padding
         self.truncation = truncation
         self.use_is_category = False if "ROLES" not in self.task else use_is_category
+        self.train_set_perc = train_set_perc
         if padding == "true":
             self.padding = True
         elif padding == "false":
@@ -102,6 +104,10 @@ class TrainTokenClassification:
         dataset = data_loader.load_data()
 
         self.train_dataset, self.eval_dataset, self.test_dataset = data_loader.tokenize_data(dataset, self.tokenizer)
+
+        if self.train_set_perc < 1:
+            self.train_dataset = self.train_dataset.shuffle().select(range(int(len(self.train_dataset) * self.train_set_perc)))
+
         if self.use_is_category and "is_category" not in self.train_dataset.features:
             self.train_dataset = self.train_dataset.add_column("is_category", self.train_dataset["tag_mask"])
             self.eval_dataset = self.eval_dataset.add_column("is_category", self.eval_dataset["tag_mask"])
@@ -149,7 +155,7 @@ class TrainTokenClassification:
             compute_metrics=self.compute_metrics,
             callbacks=[
                 DefaultFlowCallback,
-                ShowExampleTOKCL(self.tokenizer),
+                # ShowExampleTOKCL(self.tokenizer),
                 ]
         )
 
@@ -193,19 +199,15 @@ class TrainTokenClassification:
             total_file = os.path.join(RESULTS_FOLDER, f"{self.training_args.results_file}_{self.task}_{self.training_args.masking_probability}_all.pkl")
             print("******* All report classification report *****")
             total_metrics = self._get_metrics(all_predictions, all_labels)
-            with open(total_file, 'wb') as handle:
-                pickle.dump(total_metrics, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            self.total_metrics = total_metrics
             memo_file = os.path.join(RESULTS_FOLDER, f"{self.training_args.results_file}_{self.task}_{self.training_args.masking_probability}_memo.pkl")
             print("******* Memorization classification report *****")
             memorization_metrics = self._get_metrics(memorized_predictions, memorized_labels)
-            with open(memo_file, 'wb') as handle:
-                pickle.dump(memorization_metrics, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            self.memorization_metrics = memorization_metrics
             print("******* Generalization classification report *****")
             gen_file = os.path.join(RESULTS_FOLDER, f"{self.training_args.results_file}_{self.task}_{self.training_args.masking_probability}_gen.pkl")
             generalization_metrics = self._get_metrics(generalized_predictions, generalized_labels)
-            with open(gen_file, 'wb') as handle:
-                pickle.dump(generalization_metrics, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
+            self.generalization_metrics = generalization_metrics
             # Save the results to a python file that I can load later to get the values and plot
 
     def _get_remove_columns(self):
@@ -394,8 +396,22 @@ if __name__ == "__main__":
         default="",
         help="If adding the position of the category to the roles"
         )
+    parser.add_argument(
+        "--paper_report",
+        action="store_true",
+        help="Runs 5 times the training to test stability"
+        )
+    parser.add_argument(
+        "--train_set_perc",
+        default=1,
+        type=float,
+        help="Percentage of the training data set to be used"
+        )
+
 
     training_args, args = parser.parse_args_into_dataclasses()
+
+    
     dataset_id = args.dataset_id
     task = args.task
     version = args.version
@@ -410,19 +426,43 @@ if __name__ == "__main__":
     else:
         use_is_category = args.use_is_category
 
-    trainer = TrainTokenClassification(
-        training_args=training_args,
-        from_pretrained=from_pretrained,
-        dataset_id=dataset_id,
-        task=task,
-        version=version,
-        filter_empty=filter_empty,
-        ner_labels=ner_labels,
-        add_prefix_space=add_prefix_space,
-        use_crf=use_crf,
-        max_length=max_length,
-        use_is_category=use_is_category,
-        entity_identifier=args.entity_identifier
-    )
+    loop_number = 5 if args.paper_report else 1
 
-    trainer()
+    results = {
+        "memo": [],
+        "gen": [],
+        "total": [],
+    }
+
+    for i in range(loop_number):
+        trainer = TrainTokenClassification(
+            training_args=training_args,
+            from_pretrained=from_pretrained,
+            dataset_id=dataset_id,
+            task=task,
+            version=version,
+            filter_empty=filter_empty,
+            ner_labels=ner_labels,
+            add_prefix_space=add_prefix_space,
+            use_crf=use_crf,
+            max_length=max_length,
+            use_is_category=use_is_category,
+            entity_identifier=args.entity_identifier,
+            train_set_perc=args.train_set_perc
+        )
+
+        trainer()
+
+        results["total"].append(trainer.total_metrics)
+        results["gen"].append(trainer.generalization_metrics)
+        results["memo"].append(trainer.memorization_metrics)
+
+    if not os.path.exists(os.path.join(RESULTS_FOLDER, f"v{version}")):
+        os.makedirs(os.path.join(RESULTS_FOLDER, f"v{version}"))
+
+    results_file = os.path.join(RESULTS_FOLDER, f"v{version}", f"{trainer.training_args.results_file}_{trainer.task}_maskprob_{trainer.training_args.masking_probability}_training_rel_size_{args.train_set_perc}.pkl")
+    with open(results_file, 'wb') as handle:
+        pickle.dump(results, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+

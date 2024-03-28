@@ -34,7 +34,9 @@ if __name__ == "__main__":
                 "python-dotenv",
                 "seqeval",
                 "wandb<0.13.0",
-                "allennlp==2.10.1"
+                "allennlp==2.10.1",
+                "fsspec==2023.9.2"
+
             ],
             dependency_links=["https://download.pytorch.org/whl/cu101"],
             classifiers=[

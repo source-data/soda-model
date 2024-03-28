@@ -10,7 +10,7 @@ for i in ${!small_model_list[@]}; do
         python -m soda_model.token_classification.trainer \
             --dataset_id "EMBO/SourceData" \
             --task PANELIZATION \
-            --version 1.0.0 \
+            --version 2.0.3 \
             --from_pretrained ${small_model_list[$i]} \
             --masking_probability ${masking_probability[$j]} \
             --replacement_probability 0.0 \
@@ -27,7 +27,7 @@ for i in ${!small_model_list[@]}; do
             --do_predict \
             --truncation \
             --ner_labels all \
-            --results_file "panelization_base_${model_name_list[$i]}_"
+            --results_file "v2.0.3\panelization_base_${model_name_list[$i]}_"
     done
 done
 
@@ -36,7 +36,7 @@ for i in ${!large_model_list[@]}; do
         python -m soda_model.token_classification.trainer \
             --dataset_id "EMBO/SourceData" \
             --task PANELIZATION \
-            --version 1.0.0 \
+            --version 2.0.3 \
             --from_pretrained ${large_model_list[$i]} \
             --masking_probability ${masking_probability[$j]} \
             --replacement_probability 0.0 \
@@ -53,6 +53,6 @@ for i in ${!large_model_list[@]}; do
             --do_predict \
             --truncation \
             --ner_labels all \
-            --results_file "panelization_large_${model_name_list[$i]}_"
+            --results_file "v2.0.3\panelization_large_${model_name_list[$i]}_"
     done
 done

@@ -16,7 +16,7 @@ for i in ${!masking_probability[@]}; do
         python -m soda_model.token_classification.trainer \
             --dataset_id "EMBO/SourceData" \
             --task NER \
-            --version 1.0.0 \
+            --version 2.0.3 \
             --from_pretrained "michiyasunaga/BioLinkBERT-base" \
             --masking_probability ${masking_probability[$i]} \
             --replacement_probability 0.0 \
@@ -33,7 +33,7 @@ for i in ${!masking_probability[@]}; do
             --truncation \
             --padding "longest" \
             --ner_labels ${ner_labels[$j]} \
-            --results_file "ner_${ner_labels[$j]}_BioLinkBERT_base_maskingprob_${masking_probability[$i]}_"
+            --results_file "v2.0.3\ner_${ner_labels[$j]}_BioLinkBERT_base_maskingprob_${masking_probability[$i]}_"
     done
 done
 
@@ -45,7 +45,7 @@ for i in ${!masking_probability[@]}; do
         python -m soda_model.token_classification.trainer \
             --dataset_id "EMBO/SourceData" \
             --task NER \
-            --version 1.0.0 \
+            --version 2.0.3 \
             --from_pretrained "michiyasunaga/BioLinkBERT-base" \
             --masking_probability ${masking_probability[$i]} \
             --replacement_probability 0.0 \
@@ -62,7 +62,7 @@ for i in ${!masking_probability[@]}; do
             --truncation \
             --padding "longest" \
             --ner_labels ${ner_labels[$j]} \
-            --results_file "ner_${ner_labels[$j]}_BioLinkBERT_base_maskingprob_${masking_probability[$i]}_"
+            --results_file "v2.0.3\ner_${ner_labels[$j]}_BioLinkBERT_base_maskingprob_${masking_probability[$i]}_"
     done
 done
 
@@ -127,7 +127,7 @@ done
 python -m soda_model.token_classification.trainer \
     --dataset_id "EMBO/SourceData" \
     --task NER \
-    --version 1.0.0 \
+    --version 2.0.3 \
     --from_pretrained "michiyasunaga/BioLinkBERT-base" \
     --masking_probability 1.0 \
     --replacement_probability 0.0 \
@@ -144,4 +144,4 @@ python -m soda_model.token_classification.trainer \
     --truncation \
     --padding "longest" \
     --ner_labels GENEPROD \
-    --results_file "ner_GENEPROD_BioLinkBERT_base_maskingprob_1.0_"
+    --results_file "v2.0.3\ner_GENEPROD_BioLinkBERT_base_maskingprob_1.0_"
